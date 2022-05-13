@@ -45,6 +45,7 @@ public class EnemyStateMachine : MonoBehaviour
     [SerializeField] float _deathDuration = 2f;
     [SerializeField] float _blinkRate = 0.3f;
     [SerializeField] GameObject _collectible;
+    [SerializeField] AudioClip _deathSound;
 
     private Rigidbody2D enemyRb;
     private Animator enemyAnimator;
@@ -53,6 +54,7 @@ public class EnemyStateMachine : MonoBehaviour
     private bool _playerInAttackRange = false;
     private bool _canDoublePunch = false;
     private int _canDealDamage = 2;
+    private AudioSource audioSource;
 
     private float _attackDurationTimer =0;
     private float _jumpDurationTimer = 0;
@@ -77,7 +79,7 @@ public class EnemyStateMachine : MonoBehaviour
     }
     private void Awake()
     {
-
+        audioSource = GetComponent<AudioSource>();
     }
     private void Update()
     {
@@ -117,10 +119,13 @@ public class EnemyStateMachine : MonoBehaviour
                 enemyAnimator.SetTrigger("BackJump");
                 break;
             case EnemyState.TAKINGDAMAGE:
+                audioSource.Play();
                 enemyAnimator.SetTrigger("TakingDamage");
                 break;
             case EnemyState.DEAD:
-                Instantiate(_collectible, transform);
+                AudioSource.PlayClipAtPoint(_deathSound, transform.position);
+                GameObject prefab = Instantiate(_collectible, this.transform);
+                prefab.transform.parent = null;
                 enemyRb.bodyType = RigidbodyType2D.Static;
                 enemyAnimator.SetBool("IsDead", true);
                 break;
@@ -350,12 +355,13 @@ public class EnemyStateMachine : MonoBehaviour
 
     private void EnemyAttack(int damage)
     {
-        Collider2D puchCol = Physics2D.OverlapBox(_groundAtackCollider.transform.position, _groundAtackSize, _playerLayer);
+        Collider2D puchCol = Physics2D.OverlapBox(_groundAtackCollider.transform.position, _groundAtackSize, 0, _playerLayer);
         
         if (puchCol != null && _canDealDamage > 0 )
         {
-            Debug.Log("hit");
-            playerHP.value -= damage;
+            Debug.Log(puchCol);
+            //playerHP.value -= damage;
+            puchCol.transform.gameObject.GetComponentInParent<PlayerManagement>().Damage(damage);
         }
     }
     private void Flip()
